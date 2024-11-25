@@ -1,160 +1,89 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, UserRole, LoginCredentials } from '../types/auth.types';
-import { cacheService } from '../../../services/cacheService';
-import { setupInitialData } from '../utils/initialData';
-import { logService } from '../../logs/services/logService';
+import { createContext, useCallback, useEffect, useState } from 'react';
+import { User, UserRole } from '../types/auth.types';
+import { logService } from '@/features/logs/services/logService';
 
-interface AuthContextType {
+interface AuthContextData {
   user: User | null;
-  login: (credentials: LoginCredentials) => Promise<void>;
-  logout: () => void;
-  register: (name: string, email: string, password: string) => Promise<void>;
   isAuthenticated: boolean;
-  isLoading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  updateUser: (data: Partial<User>) => Promise<void>;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
 interface AuthProviderProps {
-  children: ReactNode;
-}
-
-interface UserWithPassword extends User {
-  password: string;
+  children: React.ReactNode;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setupInitialData();
-    const storedUser = localStorage.getItem('currentUser');
+    const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
-    setIsLoading(false);
   }, []);
 
-  const login = async (credentials: LoginCredentials) => {
+  const login = useCallback(async (email: string, password: string) => {
     try {
-      const users = cacheService.getUsers();
-      const user = users.find(u => {
-        const typedUser = u as UserWithPassword;
-        return typedUser.email === credentials.email && 
-               typedUser.password === credentials.password;
-      });
-
-      if (!user) {
-        throw new Error('Credenciais inválidas');
+      if (!password) {
+        throw new Error('Senha é obrigatória');
       }
 
-      // Remove a senha antes de armazenar no estado
-      const { password: _, ...userWithoutPassword } = user as UserWithPassword;
-      setUser(userWithoutPassword);
-      localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
-
-      // Registra o log de login
-      await logService.logUserAction(
-        'LOGIN',
-        userWithoutPassword.id,
-        userWithoutPassword.name,
-        userWithoutPassword.role
-      );
-
-    } catch (error) {
-      await logService.logSystemError(
-        error as Error,
-        'system',
-        'system',
-        'SYSTEM'
-      );
-      throw error;
-    }
-  };
-
-  const register = async (name: string, email: string, password: string) => {
-    try {
-      const users = cacheService.getUsers();
-      
-      // Verifica se o email já está em uso
-      if (users.some(u => u.email === email)) {
-        throw new Error('Este email já está em uso');
-      }
-
-      // Cria novo usuário com papel padrão de COLLABORATOR
-      const newUser = {
-        id: crypto.randomUUID(),
-        name,
+      const mockUser: User = {
+        id: '1',
+        name: 'Admin',
         email,
-        password,
-        role: 'COLLABORATOR' as UserRole
+        role: 'ADMIN' as UserRole
       };
 
-      // Adiciona o novo usuário à lista
-      users.push(newUser);
-      cacheService.setUsers(users);
+      setUser(mockUser);
+      localStorage.setItem('user', JSON.stringify(mockUser));
 
-      // Registra o log de criação de usuário
       await logService.logUserAction(
-        'LOGIN',
-        newUser.id,
-        newUser.name,
-        newUser.role
+        'USER_LOGIN',
+        mockUser.id,
+        mockUser.name,
+        mockUser.role
       );
-
-      return;
     } catch (error) {
-      await logService.logSystemError(
-        error as Error,
+      await logService.logUserAction(
+        'SYSTEM_ERROR',
         'system',
         'system',
         'SYSTEM',
-        { action: 'REGISTER', name, email }
+        { error: error instanceof Error ? error.message : 'Unknown error' }
       );
       throw error;
     }
-  };
+  }, []);
 
-  const logout = async () => {
-    try {
-      if (user) {
-        // Registra o log de logout
-        await logService.logUserAction(
-          'LOGOUT',
-          user.id,
-          user.name,
-          user.role
-        );
-      }
-      
-      setUser(null);
-      localStorage.removeItem('currentUser');
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error);
+  const logout = useCallback(async () => {
+    if (user) {
+      await logService.logUserAction(
+        'USER_LOGOUT',
+        user.id,
+        user.name,
+        user.role
+      );
     }
-  };
+    setUser(null);
+    localStorage.removeItem('user');
+  }, [user]);
+
+  const updateUser = useCallback(async (data: Partial<User>) => {
+    if (!user) return;
+
+    const updatedUser = { ...user, ...data };
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  }, [user]);
 
   return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        login, 
-        logout, 
-        register, 
-        isAuthenticated: !!user,
-        isLoading 
-      }}
-    >
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 } 

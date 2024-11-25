@@ -6,21 +6,22 @@ export type ProjectStatus =
   | 'CANCELLED'
   | 'ARCHIVED';
 
-export type ProjectPriority = 
-  | 'LOW'
-  | 'MEDIUM'
-  | 'HIGH'
-  | 'URGENT';
+export type ProjectPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+
+export interface ProjectRisk {
+  id: string;
+  description: string;
+  impact: 'LOW' | 'MEDIUM' | 'HIGH';
+  probability: 'LOW' | 'MEDIUM' | 'HIGH';
+  mitigation: string;
+  status: 'IDENTIFIED' | 'MITIGATED' | 'CLOSED';
+}
 
 export interface TeamMember {
   id: string;
   name: string;
   role: string;
   avatar?: string;
-  workload?: number;
-  skills?: string[];
-  assignedTasks?: number;
-  availability?: number;
 }
 
 export interface ProjectMetrics {
@@ -37,25 +38,6 @@ export interface ProjectMetrics {
   };
 }
 
-export interface ProjectRisk {
-  id: string;
-  description: string;
-  probability: 'LOW' | 'MEDIUM' | 'HIGH';
-  impact: 'LOW' | 'MEDIUM' | 'HIGH';
-  mitigation: string;
-  status: 'IDENTIFIED' | 'MITIGATED' | 'OCCURRED';
-}
-
-export interface ProjectMilestone {
-  id: string;
-  title: string;
-  description: string;
-  dueDate: Date;
-  status: 'PENDING' | 'COMPLETED';
-  dependencies: string[];
-  deliverables: string[];
-}
-
 export interface Project {
   id: string;
   name: string;
@@ -64,8 +46,6 @@ export interface Project {
   priority: ProjectPriority;
   startDate: Date;
   endDate: Date;
-  manager: string;
-  team: TeamMember[];
   budget: {
     estimated: number;
     spent: number;
@@ -79,25 +59,38 @@ export interface Project {
       date: Date;
     }[];
   };
-  progress: number;
+  manager: TeamMember;
+  team: TeamMember[];
   objectives: string[];
   deliverables: string[];
   risks: ProjectRisk[];
-  timeline: {
-    phases: {
-      id: string;
-      title: string;
-      name: string;
-      startDate: Date;
-      endDate: Date;
-      progress: number;
-      milestones: ProjectMilestone[];
-    }[];
-  };
-  metrics: ProjectMetrics;
-  qualityMetrics: QualityMetric[];
+  milestones: {
+    id: string;
+    title: string;
+    dueDate: Date;
+    status: 'PENDING' | 'COMPLETED';
+    description: string;
+  }[];
+  estimatedHours: number;
+  tags: string[];
   createdAt: Date;
   updatedAt: Date;
+  progress: number;
+  timeline: {
+    start: Date;
+    end: Date;
+    milestones: Array<{
+      date: Date;
+      title: string;
+    }>;
+  };
+  metrics: ProjectMetrics;
+  qualityMetrics: Array<{
+    criteria: string;
+    target: number;
+    actual: number;
+    status: 'ON_TRACK' | 'AT_RISK' | 'OFF_TRACK';
+  }>;
 }
 
 export interface ProjectFormData {
@@ -107,36 +100,27 @@ export interface ProjectFormData {
   priority: ProjectPriority;
   startDate: Date;
   endDate: Date;
-  manager: string;
+  estimatedHours: number;
   team: TeamMember[];
-  budget: {
-    estimated: number;
-    spent: number;
-    currency: string;
-    categories: Record<string, number>;
-    expenses: {
-      id: string;
-      description: string;
-      amount: number;
-      category: string;
-      date: Date;
-    }[];
-  };
+  tags: string[];
+  manager: TeamMember;
   objectives: string[];
   deliverables: string[];
   risks: ProjectRisk[];
-  estimatedHours?: number;
-  tags?: string[];
-  category?: string;
   progress?: number;
-  notes?: string;
-}
-
-export interface QualityMetric {
-  id: string;
-  name: string;
-  target: number;
-  actual: number;
-  criteria: string;
-  status: 'ON_TRACK' | 'AT_RISK' | 'OFF_TRACK';
+  timeline?: {
+    start: Date;
+    end: Date;
+    milestones: Array<{
+      date: Date;
+      title: string;
+    }>;
+  };
+  metrics?: ProjectMetrics;
+  qualityMetrics?: Array<{
+    criteria: string;
+    target: number;
+    actual: number;
+    status: 'ON_TRACK' | 'AT_RISK' | 'OFF_TRACK';
+  }>;
 } 

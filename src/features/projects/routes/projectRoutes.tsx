@@ -1,28 +1,50 @@
+import { lazy } from 'react';
 import { RouteObject } from 'react-router-dom';
-import { ProjectListPage } from '../pages/ProjectListPage';
-import { ProjectDetailsPage } from '../pages/ProjectDetailsPage';
-import { ProjectFormPage } from '../pages/ProjectFormPage';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+
+const ProjectsPage = lazy(() => 
+  import('../pages/ProjectsPage').then(module => ({ default: module.ProjectsPage }))
+);
+
+const ProjectDetailsPage = lazy(() => 
+  import('../pages/ProjectDetailsPage').then(module => ({ default: module.ProjectDetailsPage }))
+);
+
+const ProjectFormPage = lazy(() => 
+  import('../pages/ProjectFormPage').then(module => ({ default: module.ProjectFormPage }))
+);
 
 export const projectRoutes: RouteObject[] = [
   {
     path: '/projects',
-    children: [
-      {
-        index: true,
-        element: <ProjectListPage />
-      },
-      {
-        path: ':id',
-        element: <ProjectDetailsPage />
-      },
-      {
-        path: 'new',
-        element: <ProjectFormPage />
-      },
-      {
-        path: ':id/edit',
-        element: <ProjectFormPage />
-      }
-    ]
+    element: (
+      <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'COLLABORATOR']}>
+        <ProjectsPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: '/projects/new',
+    element: (
+      <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
+        <ProjectFormPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: '/projects/:id',
+    element: (
+      <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'COLLABORATOR']}>
+        <ProjectDetailsPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: '/projects/:id/edit',
+    element: (
+      <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
+        <ProjectFormPage />
+      </ProtectedRoute>
+    )
   }
 ]; 

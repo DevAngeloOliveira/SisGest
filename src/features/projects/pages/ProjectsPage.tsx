@@ -1,59 +1,56 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../auth/hooks/useAuth';
-import { useNotification } from '../../../hooks/useNotification';
-import { Project, ProjectFormData } from '../types/projects.types';
+import { Project } from '@/types/project.types';
 import { projectService } from '../services/projectService';
+import { useNotification } from '@/hooks/useNotification';
+import { ProjectCard } from '../components/ProjectCard';
 
 export function ProjectsPage() {
-  const [projectsList, setProjectsList] = useState<Project[]>([]);
-  const { user } = useAuth();
   const notification = useNotification();
+  const [currentProjects, setCurrentProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    void loadProjects();
+    loadProjects();
   }, []);
 
   const loadProjects = async () => {
     try {
-      const allProjects = await projectService.getProjects();
-      setProjectsList(allProjects);
+      const data = await projectService.getProjects();
+      setCurrentProjects(data.map(project => ({
+        ...project,
+        tasks: [],
+        timeline: {
+          ...project.timeline,
+          phases: []
+        }
+      })));
     } catch {
       notification.error('Erro ao carregar projetos');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleCreateProject = async (projectData: ProjectFormData) => {
-    try {
-      if (!user) return;
-      
-      await projectService.createProject(
-        projectData,
-        user.id,
-        user.name,
-        user.role
-      );
-      
-      notification.success('Projeto criado com sucesso!');
-      await loadProjects();
-    } catch {
-      notification.error('Erro ao criar projeto');
-    }
-  };
+  if (loading) {
+    return <div>Carregando...</div>;
+  }
 
   return (
     <div className="space-y-6">
-      <button 
-        onClick={() => handleCreateProject}
-        className="bg-blue-500 text-white px-4 py-2 rounded"
-      >
-        Novo Projeto
-      </button>
-
-      {projectsList.map(project => (
-        <div key={project.id}>
-          <h3>{project.name}</h3>
-          <p>{project.description}</p>
-        </div>
+      {currentProjects.map(project => (
+        <ProjectCard
+          key={project.id}
+          project={{
+            ...project,
+            tasks: [],
+            timeline: {
+              ...project.timeline,
+              phases: []
+            }
+          }}
+          onEdit={() => {}}
+          onDelete={() => {}}
+        />
       ))}
     </div>
   );

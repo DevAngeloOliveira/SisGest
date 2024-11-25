@@ -14,11 +14,11 @@ interface MenuItem {
 
 interface SidebarProps {
   isOpen: boolean;
-  onClose: () => void;
   isMobile: boolean;
+  onClose: () => void;
 }
 
-export function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
+export function Sidebar({ isOpen, isMobile, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
   const { can } = usePermissions();
   const location = useLocation();

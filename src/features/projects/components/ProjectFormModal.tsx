@@ -1,70 +1,60 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Project, ProjectPriority, ProjectStatus } from '../types/projects.types';
-import { useAuth } from '../../auth/hooks/useAuth';
+import { Project, ProjectFormData, TeamMember, ProjectStatus, ProjectPriority } from '../types/project.types';
 
 interface ProjectFormModalProps {
   project?: Project;
   onClose: () => void;
-  onSave: (data: Partial<Project>) => void;
+  onSave: (data: ProjectFormData) => void;
 }
 
 export function ProjectFormModal({ project, onClose, onSave }: ProjectFormModalProps) {
-  const { user } = useAuth();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ProjectFormData>({
     name: project?.name || '',
     description: project?.description || '',
-    status: project?.status || 'PLANNING' as ProjectStatus,
-    priority: project?.priority || 'MEDIUM' as ProjectPriority,
-    startDate: project?.startDate ? new Date(project.startDate).toISOString().split('T')[0] : '',
-    endDate: project?.endDate ? new Date(project.endDate).toISOString().split('T')[0] : '',
+    status: project?.status || 'PLANNING',
+    priority: project?.priority || 'MEDIUM',
+    startDate: project?.startDate || new Date().toISOString(),
+    endDate: project?.endDate || new Date().toISOString(),
     estimatedHours: project?.estimatedHours || 0,
     team: project?.team || [],
     tags: project?.tags || [],
-    manager: project?.manager || user?.id || '',
+    manager: project?.manager || { id: '', name: '', role: '' },
+    objectives: project?.objectives || [],
+    deliverables: project?.deliverables || [],
+    risks: project?.risks || []
   });
 
-  const [teamMembers, setTeamMembers] = useState<{ id: string; name: string }[]>([]);
   const [newTag, setNewTag] = useState('');
-
-  useEffect(() => {
-    // Carregar usuários do sistema para selecionar equipe
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    setTeamMembers(users.map((u: any) => ({ id: u.id, name: u.name })));
-  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({
-      ...formData,
-      startDate: new Date(formData.startDate),
-      endDate: formData.endDate ? new Date(formData.endDate) : undefined,
-    });
+    onSave(formData);
   };
 
   const handleAddTag = () => {
     if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        tags: [...prev.tags, newTag.trim()]
+      setFormData(prevData => ({
+        ...prevData,
+        tags: [...prevData.tags, newTag.trim()]
       }));
       setNewTag('');
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    setFormData(prevData => ({
+      ...prevData,
+      tags: prevData.tags.filter(tag => tag !== tagToRemove)
     }));
   };
 
-  const handleTeamMemberToggle = (memberId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      team: prev.team.includes(memberId)
-        ? prev.team.filter(id => id !== memberId)
-        : [...prev.team, memberId]
+  const handleTeamMemberToggle = (member: TeamMember) => {
+    setFormData(prevData => ({
+      ...prevData,
+      team: prevData.team.some(m => m.id === member.id)
+        ? prevData.team.filter(m => m.id !== member.id)
+        : [...prevData.team, member]
     }));
   };
 
@@ -267,19 +257,16 @@ export function ProjectFormModal({ project, onClose, onSave }: ProjectFormModalP
                     Equipe
                   </label>
                   <div className="mt-2 space-y-2">
-                    {teamMembers.map(member => (
-                      <label
-                        key={member.id}
-                        className="inline-flex items-center px-3 py-2 mr-2 text-sm font-medium rounded-md cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
-                      >
+                    {formData.team.map(member => (
+                      <div key={member.id} className="flex items-center">
                         <input
                           type="checkbox"
-                          checked={formData.team.includes(member.id)}
-                          onChange={() => handleTeamMemberToggle(member.id)}
+                          checked={formData.team.some(m => m.id === member.id)}
+                          onChange={() => handleTeamMemberToggle(member)}
                           className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
                         <span className="ml-2 text-gray-700 dark:text-gray-300">{member.name}</span>
-                      </label>
+                      </div>
                     ))}
                   </div>
                 </div>

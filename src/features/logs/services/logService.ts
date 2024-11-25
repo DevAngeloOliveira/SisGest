@@ -1,270 +1,85 @@
-import { Log, LogType } from '../types/logs.types';
-import { cacheService } from '../../../services/cacheService';
-import { CACHE_KEYS } from '../../../services/cacheService';
-import { TaskLogType } from '../../tasks/types/taskLog.types';
-
-interface SystemLogData extends Log {
-  userAgent?: string;
-  ip?: string;
-}
+import { Log, LogAction, LogEntity, LogFilter, LogStats } from '../types/log.types';
+import { cacheService } from '@/services/cacheService';
 
 class LogService {
-  private getLogsFromCache(): Log[] {
-    return cacheService.get<Log[]>(CACHE_KEYS.logs) || [];
+  private getLogs(): Log[] {
+    return cacheService.get('logs') || [];
   }
 
   private saveLogs(logs: Log[]): void {
-    cacheService.set(CACHE_KEYS.logs, logs);
+    cacheService.set('logs', logs);
   }
 
-  async createSystemLog(
-    type: LogType,
-    description: string,
+  async logUserAction(
+    action: LogAction,
     userId: string,
     userName: string,
     userRole: string,
-    metadata?: Record<string, unknown>,
-    severity: 'INFO' | 'WARNING' | 'ERROR' = 'INFO'
+    metadata?: Record<string, unknown>
   ): Promise<void> {
-    const log: SystemLogData = {
+    const log: Log = {
       id: crypto.randomUUID(),
-      type,
-      description,
+      type: action,
+      entity: 'USER',
+      description: `Usuário ${userName} realizou a ação: ${action}`,
       userId,
       userName,
       userRole,
       timestamp: new Date(),
       metadata,
-      severity,
-      userAgent: navigator.userAgent,
-      ip: await this.getClientIP()
+      severity: 'INFO'
     };
 
-    const logs = this.getLogsFromCache();
+    const logs = this.getLogs();
     logs.unshift(log);
-
-    // Limita a quantidade de logs
-    const maxLogs = 10000;
-    if (logs.length > maxLogs) {
-      logs.splice(maxLogs);
-    }
-
     this.saveLogs(logs);
   }
 
-  // Função auxiliar para obter IP do cliente
-  private async getClientIP(): Promise<string> {
-    try {
-      const response = await fetch('https://api.ipify.org?format=json');
-      const data = await response.json();
-      return data.ip;
-    } catch {
-      return 'unknown';
-    }
-  }
-
-  // Métodos específicos para diferentes tipos de logs
-  async logUserAction(
-    action: 'LOGIN' | 'LOGOUT' | 'PASSWORD_CHANGE' | 'PROFILE_UPDATE',
-    userId: string,
-    userName: string,
-    userRole: string,
-    metadata?: Record<string, unknown>
-  ) {
-    const type = `USER_${action}` as LogType;
-    return this.createSystemLog(
-      type,
-      `Usuário ${userName} realizou a ação: ${action.toLowerCase()}`,
-      userId,
-      userName,
-      userRole,
-      metadata,
-      'INFO'
-    );
-  }
-
-  async logProjectAction(
-    action: 'CREATED' | 'UPDATED' | 'DELETED' | 'ARCHIVED' | 'STATUS_CHANGED',
-    projectData: Record<string, unknown>,
-    userId: string,
-    userName: string,
-    userRole: string
-  ) {
-    const type = `PROJECT_${action}` as LogType;
-    const description = this.getProjectActionDescription(action, projectData);
-    return this.createSystemLog(
-      type,
-      description,
-      userId,
-      userName,
-      userRole,
-      projectData,
-      action === 'DELETED' ? 'WARNING' : 'INFO'
-    );
-  }
-
   async logTaskAction(
-    type: TaskLogType,
-    data: Record<string, unknown>,
+    action: LogAction,
+    taskData: Record<string, unknown>,
     userId: string,
     userName: string,
     userRole: string
   ): Promise<void> {
-    let description = '';
-    
-    switch (type) {
-      case 'TASK_CREATED':
-        description = `Tarefa "${data.taskTitle}" foi criada`;
-        break;
-      case 'TASK_UPDATED':
-        description = `Tarefa "${data.taskTitle}" foi atualizada`;
-        break;
-      case 'TASK_DELETED':
-        description = `Tarefa "${data.taskTitle}" foi excluída`;
-        break;
-      case 'TASK_STATUS_CHANGED':
-        description = `Status da tarefa "${data.taskTitle}" alterado para ${data.newStatus}`;
-        break;
-      case 'TASK_ASSIGNED':
-        description = `Tarefa "${data.taskTitle}" atribuída para ${data.assignedTo}`;
-        break;
-      case 'TASK_COMMENT_ADDED':
-        description = `Novo comentário adicionado à tarefa "${data.taskTitle}"`;
-        break;
-      default:
-        description = `Ação ${type} realizada na tarefa "${data.taskTitle}"`;
-    }
-
-    await this.createSystemLog(
-      type as LogType,
-      description,
+    const log: Log = {
+      id: crypto.randomUUID(),
+      type: action,
+      entity: 'TASK',
+      description: this.getTaskActionDescription(action, taskData),
       userId,
       userName,
       userRole,
-      data,
-      'INFO'
-    );
+      timestamp: new Date(),
+      metadata: taskData,
+      severity: action.includes('DELETE') ? 'WARNING' : 'INFO'
+    };
+
+    const logs = this.getLogs();
+    logs.unshift(log);
+    this.saveLogs(logs);
   }
 
-  async logTeamAction(
-    action: 'MEMBER_ADDED' | 'MEMBER_REMOVED' | 'ROLE_CHANGED',
-    teamData: Record<string, unknown>,
-    userId: string,
-    userName: string,
-    userRole: string
-  ) {
-    const type = `TEAM_${action}` as LogType;
-    const description = this.getTeamActionDescription(action, teamData);
-    return this.createSystemLog(
-      type,
-      description,
-      userId,
-      userName,
-      userRole,
-      teamData,
-      'INFO'
-    );
-  }
-
-  async logSystemError(
-    error: Error,
-    userId: string,
-    userName: string,
-    userRole: string,
-    metadata?: Record<string, unknown>
-  ) {
-    return this.createSystemLog(
-      'TASK_SYSTEM_ERROR' as LogType,
-      error.message,
-      userId,
-      userName,
-      userRole,
-      metadata,
-      'ERROR'
-    );
-  }
-
-  private getProjectActionDescription(action: string, data: Record<string, unknown>): string {
-    const projectName = data.name as string;
+  private getTaskActionDescription(action: string, data: Record<string, unknown>): string {
+    const taskTitle = data.title as string;
     switch (action) {
       case 'CREATED':
-        return `Projeto "${projectName}" foi criado`;
+        return `Tarefa "${taskTitle}" foi criada`;
       case 'UPDATED':
-        return `Projeto "${projectName}" foi atualizado`;
+        return `Tarefa "${taskTitle}" foi atualizada`;
       case 'DELETED':
-        return `Projeto "${projectName}" foi excluído`;
-      case 'ARCHIVED':
-        return `Projeto "${projectName}" foi arquivado`;
+        return `Tarefa "${taskTitle}" foi excluída`;
       case 'STATUS_CHANGED':
-        return `Status do projeto "${projectName}" alterado para ${data.newStatus}`;
+        return `Status da tarefa "${taskTitle}" alterado para ${data.newStatus}`;
+      case 'ASSIGNED':
+        return `Tarefa "${taskTitle}" atribuída para ${data.assignedTo}`;
       default:
-        return `Ação ${action} realizada no projeto "${projectName}"`;
+        return `Ação ${action} realizada na tarefa "${taskTitle}"`;
     }
-  }
-
-  private getTeamActionDescription(action: string, data: Record<string, unknown>): string {
-    const memberName = data.memberName as string;
-    const projectName = data.projectName as string;
-    switch (action) {
-      case 'MEMBER_ADDED':
-        return `${memberName} foi adicionado à equipe do projeto "${projectName}"`;
-      case 'MEMBER_REMOVED':
-        return `${memberName} foi removido da equipe do projeto "${projectName}"`;
-      case 'ROLE_CHANGED':
-        return `Papel de ${memberName} alterado para ${data.newRole}`;
-      default:
-        return `Ação ${action} realizada na equipe`;
-    }
-  }
-
-  async searchLogs(filters?: {
-    type?: LogType[];
-    userId?: string;
-    severity?: ('INFO' | 'WARNING' | 'ERROR')[];
-    startDate?: Date;
-    endDate?: Date;
-    search?: string;
-  }): Promise<Log[]> {
-    let logs = this.getLogsFromCache();
-
-    if (filters) {
-      logs = logs.filter(log => {
-        if (filters.type?.length && !filters.type.includes(log.type)) {
-          return false;
-        }
-        if (filters.userId && log.userId !== filters.userId) {
-          return false;
-        }
-        if (filters.severity?.length && !filters.severity.includes(log.severity)) {
-          return false;
-        }
-        if (filters.startDate && new Date(log.timestamp) < filters.startDate) {
-          return false;
-        }
-        if (filters.endDate && new Date(log.timestamp) > filters.endDate) {
-          return false;
-        }
-        if (filters.search) {
-          const searchTerm = filters.search.toLowerCase();
-          return (
-            log.description.toLowerCase().includes(searchTerm) ||
-            log.userName.toLowerCase().includes(searchTerm) ||
-            log.type.toLowerCase().includes(searchTerm)
-          );
-        }
-        return true;
-      });
-    }
-
-    return logs;
-  }
-
-  async clearLogs(): Promise<void> {
-    this.saveLogs([]);
   }
 
   async exportLogs(format: 'csv' | 'json' = 'csv'): Promise<string> {
-    const logs = this.getLogsFromCache();
+    const logs = this.getLogs();
 
     if (format === 'csv') {
       const headers = ['ID', 'Tipo', 'Descrição', 'Usuário', 'Papel', 'Data', 'Severidade'];
@@ -284,16 +99,86 @@ class LogService {
     return JSON.stringify(logs, null, 2);
   }
 
-  async getLogStats(): Promise<{
-    total: number;
-    byType: Record<LogType, number>;
-    bySeverity: Record<string, number>;
-    recentActivity: { date: Date; count: number; }[];
-  }> {
-    const logs = this.getLogsFromCache();
-    const byType: Record<string, number> = {};
-    const bySeverity: Record<string, number> = {};
-    const recentActivity: Record<string, number> = {};
+  async logProjectAction(
+    action: LogAction,
+    projectData: Record<string, unknown>,
+    userId: string,
+    userName: string,
+    userRole: string
+  ): Promise<void> {
+    const log: Log = {
+      id: crypto.randomUUID(),
+      type: `PROJECT_${action}` as LogAction,
+      entity: 'PROJECT',
+      description: this.getProjectActionDescription(action, projectData),
+      userId,
+      userName,
+      userRole,
+      timestamp: new Date(),
+      metadata: projectData,
+      severity: action === 'DELETE' ? 'WARNING' : 'INFO'
+    };
+
+    const logs = this.getLogs();
+    logs.unshift(log);
+    this.saveLogs(logs);
+  }
+
+  private getProjectActionDescription(action: LogAction, data: Record<string, unknown>): string {
+    const projectName = data.name as string;
+    switch (action) {
+      case 'CREATE':
+        return `Projeto "${projectName}" foi criado`;
+      case 'UPDATE':
+        return `Projeto "${projectName}" foi atualizado`;
+      case 'DELETE':
+        return `Projeto "${projectName}" foi excluído`;
+      case 'ARCHIVE':
+        return `Projeto "${projectName}" foi arquivado`;
+      default:
+        return `Ação ${action} realizada no projeto "${projectName}"`;
+    }
+  }
+
+  async searchLogs(filters?: LogFilter): Promise<Log[]> {
+    const logs = this.getLogs();
+    
+    if (!filters) return logs;
+
+    return logs.filter(log => {
+      if (filters.action && log.type !== filters.action) return false;
+      if (filters.entity && log.entity !== filters.entity) return false;
+      if (filters.userId && log.userId !== filters.userId) return false;
+      if (filters.severity?.length && !filters.severity.includes(log.severity)) return false;
+      if (filters.startDate && new Date(log.timestamp) < filters.startDate) return false;
+      if (filters.endDate && new Date(log.timestamp) > filters.endDate) return false;
+      if (filters.search) {
+        const searchTerm = filters.search.toLowerCase();
+        return (
+          log.description.toLowerCase().includes(searchTerm) ||
+          log.userName.toLowerCase().includes(searchTerm)
+        );
+      }
+      return true;
+    });
+  }
+
+  async getLogStats(): Promise<LogStats> {
+    const logs = this.getLogs();
+    
+    const stats: LogStats = {
+      total: logs.length,
+      byAction: {} as Record<LogAction, number>,
+      byEntity: {} as Record<LogEntity, number>,
+      bySeverity: {} as Record<string, number>,
+      recentActivity: []
+    };
+
+    logs.forEach(log => {
+      stats.byAction[log.type] = (stats.byAction[log.type] || 0) + 1;
+      stats.byEntity[log.entity] = (stats.byEntity[log.entity] || 0) + 1;
+      stats.bySeverity[log.severity] = (stats.bySeverity[log.severity] || 0) + 1;
+    });
 
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const date = new Date();
@@ -301,25 +186,14 @@ class LogService {
       return date.toISOString().split('T')[0];
     });
 
-    logs.forEach(log => {
-      byType[log.type] = (byType[log.type] || 0) + 1;
-      bySeverity[log.severity] = (bySeverity[log.severity] || 0) + 1;
+    stats.recentActivity = last7Days.map(date => ({
+      date: new Date(date),
+      count: logs.filter(log => 
+        log.timestamp.toISOString().split('T')[0] === date
+      ).length
+    }));
 
-      const date = new Date(log.timestamp).toISOString().split('T')[0];
-      if (last7Days.includes(date)) {
-        recentActivity[date] = (recentActivity[date] || 0) + 1;
-      }
-    });
-
-    return {
-      total: logs.length,
-      byType: byType as Record<LogType, number>,
-      bySeverity,
-      recentActivity: last7Days.map(date => ({
-        date: new Date(date),
-        count: recentActivity[date] || 0
-      }))
-    };
+    return stats;
   }
 }
 

@@ -1,42 +1,30 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../features/auth/hooks/useAuth';
-import { usePermissions } from '../hooks/usePermissions';
 import { UserRole } from '../features/auth/types/auth.types';
-import { LoadingScreen } from './LoadingScreen';
-import { useNotification } from '../hooks/useNotification';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredPermission?: string;
   allowedRoles?: UserRole[];
+  requiredPermission?: string;
 }
 
 export function ProtectedRoute({ 
   children, 
-  requiredPermission, 
-  allowedRoles 
+  allowedRoles = [], 
+  requiredPermission 
 }: ProtectedRouteProps) {
-  const { isAuthenticated, user, isLoading } = useAuth();
-  const { can } = usePermissions();
-  const location = useLocation();
-  const notification = useNotification();
-
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
+  const { isAuthenticated, user } = useAuth();
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" />;
   }
 
-  if (requiredPermission && !can(requiredPermission)) {
-    notification.error('Você não tem permissão para acessar esta página');
-    return <Navigate to="/" replace />;
+  if (allowedRoles.length > 0 && user && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/unauthorized" />;
   }
 
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    notification.error('Apenas gerentes e administradores podem acessar esta página');
-    return <Navigate to="/" replace />;
+  if (requiredPermission && user?.permissions && !user.permissions.includes(requiredPermission)) {
+    return <Navigate to="/unauthorized" />;
   }
 
   return <>{children}</>;

@@ -1,81 +1,46 @@
-import { CACHE_KEYS } from '../../../constants/cache';
-import { Project, ProjectFormData } from '../types/projects.types';
-import { cacheService } from '../../../services/cacheService';
-import { logService } from '../../logs/services/logService';
-
-interface ProjectStats {
-  totalProjects: number;
-  activeProjects: number;
-  completedProjects: number;
-}
+import { Project, ProjectFormData } from '@/types/project.types';
+import { cacheService } from '@/services/cacheService';
+import { logService } from '@/features/logs/services/logService';
 
 class ProjectService {
-  private getProjectsFromCache(): Project[] {
-    return cacheService.get<Project[]>('projects') || [];
-  }
-
-  private saveProjectsToCache(projects: Project[]): void {
-    cacheService.set('projects', projects);
-  }
-
-  private updateDashboardStats(oldProject?: Project, newProject?: Project): void {
-    const stats = cacheService.get<ProjectStats>('dashboardStats') || {
-      totalProjects: 0,
-      activeProjects: 0,
-      completedProjects: 0
-    };
-
-    if (newProject && !oldProject) {
-      stats.totalProjects++;
-      if (newProject.status === 'IN_PROGRESS') stats.activeProjects++;
-      if (newProject.status === 'COMPLETED') stats.completedProjects++;
-    } 
-    else if (oldProject && newProject) {
-      if (oldProject.status !== newProject.status) {
-        if (oldProject.status === 'IN_PROGRESS') stats.activeProjects--;
-        if (oldProject.status === 'COMPLETED') stats.completedProjects--;
-        if (newProject.status === 'IN_PROGRESS') stats.activeProjects++;
-        if (newProject.status === 'COMPLETED') stats.completedProjects++;
-      }
-    }
-    else if (oldProject && !newProject) {
-      stats.totalProjects--;
-      if (oldProject.status === 'IN_PROGRESS') stats.activeProjects--;
-      if (oldProject.status === 'COMPLETED') stats.completedProjects--;
-    }
-
-    cacheService.set('dashboardStats', stats);
-  }
-
   async getProjects(): Promise<Project[]> {
-    return this.getProjectsFromCache();
+    const projects = cacheService.getProjects();
+    return projects.map(project => ({
+      ...project,
+      timeline: {
+        ...project.timeline,
+        phases: [],
+        milestones: project.timeline?.milestones || []
+      },
+      tasks: []
+    }));
   }
 
-  async getProjectById(id: string): Promise<Project> {
-    const projects = this.getProjectsFromCache();
-    const project = projects.find(p => p.id === id);
-    if (!project) {
-      throw new Error('Projeto não encontrado');
-    }
-    return project;
+  async getProjectById(id: string): Promise<Project | null> {
+    const projects = await this.getProjects();
+    return projects.find(p => p.id === id) || null;
   }
 
-  async createProject(data: ProjectFormData, userId: string, userName: string, userRole: string): Promise<Project> {
-    const projects = this.getProjectsFromCache();
+  async createProject(
+    data: ProjectFormData,
+    userId: string,
+    userName: string,
+    userRole: string
+  ): Promise<Project> {
+    const projects = await this.getProjects();
     
     const newProject: Project = {
       id: crypto.randomUUID(),
       ...data,
-      status: data.status || 'PLANNING',
-      priority: data.priority || 'MEDIUM',
+      createdAt: new Date(),
+      updatedAt: new Date(),
       progress: 0,
-      team: data.team.map(member => ({
-        id: typeof member === 'string' ? member : member.id,
-        name: typeof member === 'string' ? '' : member.name,
-        role: typeof member === 'string' ? '' : member.role
-      })),
+      tasks: [],
       timeline: {
-        phases: []
+        phases: [],
+        start: new Date(data.startDate),
+        end: new Date(data.endDate),
+        milestones: []
       },
       metrics: {
         plannedProgress: 0,
@@ -86,110 +51,62 @@ class ProjectService {
         teamUtilization: 0,
         riskCount: { high: 0, medium: 0, low: 0 }
       },
-      qualityMetrics: [],
-      createdAt: new Date(),
-      updatedAt: new Date()
+      budget: {
+        estimated: 0,
+        spent: 0,
+        currency: 'BRL',
+        categories: {},
+        expenses: []
+      },
+      qualityMetrics: []
     };
 
     projects.push(newProject);
-    this.saveProjectsToCache(projects);
-    this.updateDashboardStats(undefined, newProject);
+    await cacheService.setProjects(projects);
 
-    // Registra o log
-    await logService.logProjectAction(
-      'CREATED',
-      {
-        name: newProject.name,
-        id: newProject.id,
-        manager: newProject.manager,
-        team: newProject.team,
-        startDate: newProject.startDate,
-        endDate: newProject.endDate
-      },
+    await logService.logUserAction(
+      'PROJECT_CREATE',
       userId,
       userName,
-      userRole
+      userRole,
+      { id: newProject.id, name: newProject.name }
     );
 
     return newProject;
   }
 
-  async updateProject(id: string, data: ProjectFormData): Promise<Project> {
-    const projects = this.getProjectsFromCache();
+  async updateProject(
+    id: string,
+    data: Partial<Project>
+  ): Promise<Project> {
+    const projects = await this.getProjects();
     const index = projects.findIndex(p => p.id === id);
     
     if (index === -1) {
       throw new Error('Projeto não encontrado');
     }
 
-    const oldProject = projects[index];
-    const updatedProject: Project = {
-      ...oldProject,
+    const updatedProject = {
+      ...projects[index],
       ...data,
-      id,
-      updatedAt: new Date(),
+      updatedAt: new Date()
     };
 
     projects[index] = updatedProject;
-    this.saveProjectsToCache(projects);
-    this.updateDashboardStats(oldProject, updatedProject);
+    await cacheService.setProjects(projects);
 
     return updatedProject;
   }
 
   async deleteProject(id: string): Promise<void> {
-    const projects = this.getProjectsFromCache();
-    const projectToDelete = projects.find(p => p.id === id);
-    
-    if (!projectToDelete) {
-      throw new Error('Projeto não encontrado');
-    }
-
-    // Verifica se existem tarefas associadas
-    const tasks = cacheService.get<Record<string, unknown>[]>(CACHE_KEYS.tasks) || [];
-    const hasAssociatedTasks = tasks.some(task => task.projectId === id);
-
-    if (hasAssociatedTasks) {
-      throw new Error('Não é possível excluir um projeto com tarefas associadas');
-    }
-
-    const updatedProjects = projects.filter(p => p.id !== id);
-    this.saveProjectsToCache(updatedProjects);
-
-    // Registra a exclusão nos logs
-    const logs: unknown[] = cacheService.get(CACHE_KEYS.logs) || [];
-    logs.push({
-      id: crypto.randomUUID(),
-      type: 'PROJECT_DELETED',
-      description: `Projeto "${projectToDelete.name}" foi excluído`,
-      timestamp: new Date()
-    });
-    cacheService.set(CACHE_KEYS.logs, logs);
+    const projects = await this.getProjects();
+    const filteredProjects = projects.filter(p => p.id !== id);
+    await cacheService.setProjects(filteredProjects);
   }
 
-  async archiveProject(id: string): Promise<void> {
-    const projects = this.getProjectsFromCache();
-    const projectIndex = projects.findIndex(p => p.id === id);
-    
-    if (projectIndex === -1) {
-      throw new Error('Projeto não encontrado');
-    }
-
-    projects[projectIndex] = {
-      ...projects[projectIndex],
-      status: 'ARCHIVED',
-      updatedAt: new Date()
-    };
-
-    this.saveProjectsToCache(projects);
-  }
-
-  getProjectStats(projectId: string) {
-    return cacheService.getProjectStats(projectId);
-  }
-
-  async syncProjects(): Promise<boolean> {
-    return cacheService.sync();
+  async syncProjects(): Promise<void> {
+    // Implementação futura
+    return Promise.resolve();
   }
 }
 

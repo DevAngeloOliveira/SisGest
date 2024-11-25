@@ -7,7 +7,14 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
+      '@': path.resolve(__dirname, './src'),
+      '@features': path.resolve(__dirname, './src/features'),
+      '@components': path.resolve(__dirname, './src/components'),
+      '@pages': path.resolve(__dirname, './src/pages'),
+      '@services': path.resolve(__dirname, './src/services'),
+      '@utils': path.resolve(__dirname, './src/utils'),
+      '@hooks': path.resolve(__dirname, './src/hooks'),
+      '@types': path.resolve(__dirname, './src/types')
     }
   },
   build: {
@@ -20,6 +27,9 @@ export default defineConfig({
           ui: ['framer-motion', 'react-toastify']
         }
       }
+    },
+    commonjsOptions: {
+      transformMixedEsModules: true
     }
   }
 })

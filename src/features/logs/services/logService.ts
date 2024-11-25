@@ -1,4 +1,4 @@
-import { Log, LogAction, LogEntity, LogFilter, LogStats } from '../types/log.types';
+import { Log, LogAction } from '../types/log.types';
 import { cacheService } from '@/services/cacheService';
 
 class LogService {
@@ -142,7 +142,7 @@ class LogService {
 
   async searchLogs(filters?: LogFilter): Promise<Log[]> {
     const logs = this.getLogs();
-    
+
     if (!filters) return logs;
 
     return logs.filter(log => {
@@ -165,7 +165,7 @@ class LogService {
 
   async getLogStats(): Promise<LogStats> {
     const logs = this.getLogs();
-    
+
     const stats: LogStats = {
       total: logs.length,
       byAction: {} as Record<LogAction, number>,
@@ -188,7 +188,7 @@ class LogService {
 
     stats.recentActivity = last7Days.map(date => ({
       date: new Date(date),
-      count: logs.filter(log => 
+      count: logs.filter(log =>
         log.timestamp.toISOString().split('T')[0] === date
       ).length
     }));

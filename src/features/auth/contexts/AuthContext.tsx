@@ -1,6 +1,6 @@
 import { createContext, useCallback, useEffect, useState } from 'react';
 import { User, UserRole } from '../types/auth.types';
-import { logService } from '@/features/logs/services/logService';
+import { logService } from '../../logs/services/logService';
 
 interface AuthContextData {
   user: User | null;

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Log, LogAction, LogEntity } from '@/features/logs/types/log.types';
 import { logService } from '@/features/logs/services/logService';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 interface LogFilters {
   action: LogAction | '';
@@ -50,13 +49,13 @@ export function ReportsPage() {
   };
 
   const formatLogDate = (date: Date) => {
-    return format(new Date(date), "dd 'de' MMMM 'de' yyyy 'às' HH:mm:ss", { locale: ptBR });
+    return format(new Date(date), "dd 'de' MMMM 'de' yyyy 'às' HH:mm:ss");
   };
 
   return (
     <div>
       {/* Filtros */}
-      <div className="mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 mb-4 md:grid-cols-2 lg:grid-cols-4">
         <select
           value={filters.action}
           onChange={(e) => handleFilterChange('action', e.target.value)}
@@ -71,8 +70,8 @@ export function ReportsPage() {
       {/* Lista de Logs */}
       <div className="mt-4">
         {currentLogs.map(log => (
-          <div key={log.id} className="mb-2 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
-            <div className="flex justify-between items-start">
+          <div key={log.id} className="p-4 mb-2 bg-white rounded-lg shadow dark:bg-gray-800">
+            <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
                   {log.description}

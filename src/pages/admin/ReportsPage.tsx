@@ -143,14 +143,14 @@ export function ReportsPage() {
       </div>
 
       {/* Cards de Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-gray-800 rounded-lg shadow p-6"
+          className="p-6 bg-white rounded-lg shadow dark:bg-gray-800"
         >
           <div className="flex items-center">
-            <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30">
+            <div className="p-3 bg-blue-100 rounded-full dark:bg-blue-900/30">
               <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
@@ -166,10 +166,10 @@ export function ReportsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white dark:bg-gray-800 rounded-lg shadow p-6"
+          className="p-6 bg-white rounded-lg shadow dark:bg-gray-800"
         >
           <div className="flex items-center">
-            <div className="p-3 rounded-full bg-green-100 dark:bg-green-900/30">
+            <div className="p-3 bg-green-100 rounded-full dark:bg-green-900/30">
               <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
@@ -185,10 +185,10 @@ export function ReportsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-white dark:bg-gray-800 rounded-lg shadow p-6"
+          className="p-6 bg-white rounded-lg shadow dark:bg-gray-800"
         >
           <div className="flex items-center">
-            <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/30">
+            <div className="p-3 bg-purple-100 rounded-full dark:bg-purple-900/30">
               <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
               </svg>
@@ -204,10 +204,10 @@ export function ReportsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-white dark:bg-gray-800 rounded-lg shadow p-6"
+          className="p-6 bg-white rounded-lg shadow dark:bg-gray-800"
         >
           <div className="flex items-center">
-            <div className="p-3 rounded-full bg-yellow-100 dark:bg-yellow-900/30">
+            <div className="p-3 bg-yellow-100 rounded-full dark:bg-yellow-900/30">
               <svg className="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -225,16 +225,16 @@ export function ReportsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="bg-white dark:bg-gray-800 rounded-lg shadow p-6"
+        className="p-6 bg-white rounded-lg shadow dark:bg-gray-800"
       >
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Ação</label>
             <select
               name="action"
               value={filters.action}
               onChange={handleFilterChange}
-              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="block w-full mt-1 border-gray-300 rounded-md shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-blue-500 focus:ring-blue-500"
             >
               <option value="">Todas</option>
               <option value="CREATE">Criação</option>
@@ -251,7 +251,7 @@ export function ReportsPage() {
               name="entity"
               value={filters.entity}
               onChange={handleFilterChange}
-              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="block w-full mt-1 border-gray-300 rounded-md shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-blue-500 focus:ring-blue-500"
             >
               <option value="">Todas</option>
               <option value="USER">Usuário</option>
@@ -268,7 +268,7 @@ export function ReportsPage() {
               name="startDate"
               value={filters.startDate}
               onChange={handleFilterChange}
-              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="block w-full mt-1 border-gray-300 rounded-md shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
 
@@ -279,7 +279,7 @@ export function ReportsPage() {
               name="endDate"
               value={filters.endDate}
               onChange={handleFilterChange}
-              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="block w-full mt-1 border-gray-300 rounded-md shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
 
@@ -289,7 +289,7 @@ export function ReportsPage() {
               name="userRole"
               value={filters.userRole}
               onChange={handleFilterChange}
-              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="block w-full mt-1 border-gray-300 rounded-md shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-blue-500 focus:ring-blue-500"
             >
               <option value="">Todos</option>
               <option value="ADMIN">Administrador</option>
@@ -306,21 +306,21 @@ export function ReportsPage() {
               value={filters.search}
               onChange={handleFilterChange}
               placeholder="Buscar nos logs..."
-              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="block w-full mt-1 border-gray-300 rounded-md shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
         </div>
 
-        <div className="mt-4 flex justify-end space-x-3">
+        <div className="flex justify-end mt-4 space-x-3">
           <button
             onClick={handleClearFilters}
-            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md dark:text-gray-300 dark:bg-gray-700 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600"
           >
             Limpar Filtros
           </button>
           <button
             onClick={handleApplyFilters}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600"
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600"
           >
             Aplicar Filtros
           </button>
@@ -332,30 +332,30 @@ export function ReportsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden"
+        className="overflow-hidden bg-white rounded-lg shadow dark:bg-gray-800"
       >
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-gray-300">
                   Data/Hora
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-gray-300">
                   Usuário
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-gray-300">
                   Ação
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-gray-300">
                   Entidade
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase dark:text-gray-300">
                   Descrição
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
               {isLoading ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
@@ -371,7 +371,7 @@ export function ReportsPage() {
               ) : (
                 logs.map((log) => (
                   <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap dark:text-gray-400">
                       {formatDate(log.timestamp)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -392,7 +392,7 @@ export function ReportsPage() {
                         {log.action}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap dark:text-gray-400">
                       {log.entity}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">

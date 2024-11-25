@@ -19,13 +19,18 @@ export function ProjectDetailsPage() {
 
   useEffect(() => {
     if (id) {
-      const projectData = projectService.getProjectById(id);
-      if (projectData) {
-        setProject(projectData);
-      } else {
-        notification.error('Projeto não encontrado');
-        navigate('/projects');
-      }
+      projectService.getProjectById(id)
+        .then((projectData) => {
+          if (projectData) {
+            setProject(projectData);
+          } else {
+            notification.error('Projeto não encontrado');
+            navigate('/projects');
+          }
+        })
+        .catch((error) => {
+          console.error('Error fetching project data:', error);
+        });
     }
   }, [id, navigate, notification]);
 

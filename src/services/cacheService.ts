@@ -1,64 +1,124 @@
-import { CACHE_KEYS } from '../constants/cache';
-export { CACHE_KEYS };
+import { openDB, IDBPDatabase } from 'idb';
 
-export class CacheService {
-  private static instance: CacheService;
-  private cache: Map<string, any>;
+interface CacheItem<T> {
+  data: T;
+  timestamp: number;
+  expiresIn: number;
+}
 
-  private constructor() {
-    this.cache = new Map();
-    this.loadFromLocalStorage();
-  }
+class CacheService {
+  private dbName = 'sisgest-cache';
+  private version = 1;
+  private db: IDBPDatabase | null = null;
 
-  static getInstance(): CacheService {
-    if (!CacheService.instance) {
-      CacheService.instance = new CacheService();
-    }
-    return CacheService.instance;
-  }
+  async init() {
+    if (this.db) return;
 
-  private loadFromLocalStorage() {
-    Object.values(CACHE_KEYS).forEach(key => {
-      const value = localStorage.getItem(key);
-      if (value) {
-        try {
-          this.cache.set(key, JSON.parse(value));
-        } catch (error) {
-          console.error(`Error loading cache for key ${key}:`, error);
+    this.db = await openDB(this.dbName, this.version, {
+      upgrade(db) {
+        // Store para dados gerais
+        if (!db.objectStoreNames.contains('cache')) {
+          db.createObjectStore('cache');
         }
-      }
+        // Store específico para projetos
+        if (!db.objectStoreNames.contains('projects')) {
+          db.createObjectStore('projects', { keyPath: 'id' });
+        }
+      },
     });
   }
 
-  set(key: string, value: any, persist: boolean = true): void {
-    this.cache.set(key, value);
-    if (persist) {
-      localStorage.setItem(key, JSON.stringify(value));
+  private async ensureDB() {
+    if (!this.db) {
+      await this.init();
     }
   }
 
-  get<T>(key: string): T | null {
-    return this.cache.get(key) || null;
+  private isExpired(item: CacheItem<unknown>) {
+    return Date.now() - item.timestamp > item.expiresIn;
   }
 
-  remove(key: string): void {
-    this.cache.delete(key);
-    localStorage.removeItem(key);
+  async set<T>(key: string, data: T, expiresIn = 1000 * 60 * 60) { // 1 hora por padrão
+    await this.ensureDB();
+    if (!this.db) throw new Error('Database not initialized');
+
+    const cacheItem: CacheItem<T> = {
+      data,
+      timestamp: Date.now(),
+      expiresIn,
+    };
+
+    await this.db.put('cache', cacheItem, key);
   }
 
-  clear(): void {
-    this.cache.clear();
-    localStorage.clear();
+  async get<T>(key: string): Promise<T | null> {
+    await this.ensureDB();
+    if (!this.db) throw new Error('Database not initialized');
+
+    const item = await this.db.get('cache', key) as CacheItem<T> | undefined;
+
+    if (!item) return null;
+    if (this.isExpired(item)) {
+      await this.remove(key);
+      return null;
+    }
+
+    return item.data;
   }
 
-  has(key: string): boolean {
-    return this.cache.has(key);
+  async remove(key: string) {
+    await this.ensureDB();
+    if (!this.db) throw new Error('Database not initialized');
+
+    await this.db.delete('cache', key);
   }
 
-  sync(): Promise<void> {
-    // Implementar sincronização com o backend
-    return Promise.resolve();
+  async clear() {
+    await this.ensureDB();
+    if (!this.db) throw new Error('Database not initialized');
+
+    await this.db.clear('cache');
+  }
+
+  // Métodos específicos para projetos
+  async setProjects(projects: any[]) {
+    await this.ensureDB();
+    if (!this.db) throw new Error('Database not initialized');
+
+    const tx = this.db.transaction('projects', 'readwrite');
+    await Promise.all([
+      ...projects.map(project => tx.store.put(project)),
+      tx.done
+    ]);
+  }
+
+  async getProjects() {
+    await this.ensureDB();
+    if (!this.db) throw new Error('Database not initialized');
+
+    return this.db.getAll('projects');
+  }
+
+  async getProject(id: string) {
+    await this.ensureDB();
+    if (!this.db) throw new Error('Database not initialized');
+
+    return this.db.get('projects', id);
+  }
+
+  async removeProject(id: string) {
+    await this.ensureDB();
+    if (!this.db) throw new Error('Database not initialized');
+
+    await this.db.delete('projects', id);
+  }
+
+  async clearProjects() {
+    await this.ensureDB();
+    if (!this.db) throw new Error('Database not initialized');
+
+    await this.db.clear('projects');
   }
 }
 
-export const cacheService = CacheService.getInstance(); 
+export const cacheService = new CacheService(); 

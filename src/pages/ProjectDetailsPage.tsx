@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Project } from '../types';
+import { Project, User } from '../types';
 import { projectService } from '../features/projects/services/projectService';
 import { Card } from '../components/shared/Card';
 
@@ -43,6 +43,11 @@ export function ProjectDetailsPage() {
     );
   }
 
+  const manager = project.manager || projectService.getDefaultManager();
+  const team = (project.team || []).filter((member): member is User => {
+    return member && typeof member === 'object' && 'name' in member && typeof member.name === 'string';
+  });
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-6">
@@ -56,10 +61,6 @@ export function ProjectDetailsPage() {
             <div>
               <h3 className="text-sm font-medium text-gray-500">Status</h3>
               <p className="mt-1">{project.status}</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Prioridade</h3>
-              <p className="mt-1">{project.priority}</p>
             </div>
             <div>
               <h3 className="text-sm font-medium text-gray-500">Progresso</h3>
@@ -82,10 +83,12 @@ export function ProjectDetailsPage() {
               <h3 className="text-sm font-medium text-gray-500">Data de Início</h3>
               <p className="mt-1">{new Date(project.startDate).toLocaleDateString()}</p>
             </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Data de Término</h3>
-              <p className="mt-1">{new Date(project.endDate).toLocaleDateString()}</p>
-            </div>
+            {project.endDate && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Data de Término</h3>
+                <p className="mt-1">{new Date(project.endDate).toLocaleDateString()}</p>
+              </div>
+            )}
           </div>
         </Card>
 
@@ -94,58 +97,52 @@ export function ProjectDetailsPage() {
             <div>
               <h3 className="text-sm font-medium text-gray-500">Gerente</h3>
               <div className="mt-1 flex items-center space-x-2">
-                {project.manager.avatar ? (
+                {manager.avatar ? (
                   <img
-                    src={project.manager.avatar}
-                    alt={project.manager.name}
+                    src={manager.avatar}
+                    alt={manager.name}
                     className="h-8 w-8 rounded-full"
                   />
                 ) : (
                   <div className="h-8 w-8 rounded-full bg-primary-500 flex items-center justify-center">
                     <span className="text-sm font-medium text-white">
-                      {project.manager.name.charAt(0)}
+                      {manager.name ? manager.name.charAt(0) : '?'}
                     </span>
                   </div>
                 )}
-                <span>{project.manager.name}</span>
+                <span>{manager.name || 'Sem nome'}</span>
               </div>
             </div>
             <div>
               <h3 className="text-sm font-medium text-gray-500">Membros</h3>
               <div className="mt-1 flex flex-wrap gap-2">
-                {project.team.map(member => (
-                  <div
-                    key={member.id}
-                    className="flex items-center space-x-2 bg-gray-100 rounded-full px-3 py-1"
-                  >
-                    {member.avatar ? (
-                      <img
-                        src={member.avatar}
-                        alt={member.name}
-                        className="h-6 w-6 rounded-full"
-                      />
-                    ) : (
-                      <div className="h-6 w-6 rounded-full bg-primary-500 flex items-center justify-center">
-                        <span className="text-xs font-medium text-white">
-                          {member.name.charAt(0)}
-                        </span>
-                      </div>
-                    )}
-                    <span className="text-sm">{member.name}</span>
-                  </div>
-                ))}
+                {team.length > 0 ? (
+                  team.map(member => (
+                    <div
+                      key={member.id}
+                      className="flex items-center space-x-2 bg-gray-100 rounded-full px-3 py-1"
+                    >
+                      {member.avatar ? (
+                        <img
+                          src={member.avatar}
+                          alt={member.name}
+                          className="h-6 w-6 rounded-full"
+                        />
+                      ) : (
+                        <div className="h-6 w-6 rounded-full bg-primary-500 flex items-center justify-center">
+                          <span className="text-xs font-medium text-white">
+                            {member.name.charAt(0)}
+                          </span>
+                        </div>
+                      )}
+                      <span className="text-sm">{member.name}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500">Nenhum membro na equipe</p>
+                )}
               </div>
             </div>
-          </div>
-        </Card>
-
-        <Card title="Objetivos">
-          <div className="space-y-2">
-            {project.objectives.map((objective, index) => (
-              <p key={index} className="text-gray-600">
-                • {objective}
-              </p>
-            ))}
           </div>
         </Card>
       </div>

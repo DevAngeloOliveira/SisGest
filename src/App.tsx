@@ -6,6 +6,7 @@ import { AppProvider } from './providers/AppProvider'
 import { InitializationWrapper } from './components/InitializationWrapper'
 import { router } from './routes'
 import { ToastContainer } from 'react-toastify'
+import { PWAUpdatePrompt } from './components/PWAUpdatePrompt'
 
 export function App() {
   return (
@@ -15,6 +16,7 @@ export function App() {
           <AppProvider>
             <RouterProvider router={router} />
             <ToastContainer />
+            <PWAUpdatePrompt />
           </AppProvider>
         </InitializationWrapper>
       </Suspense>

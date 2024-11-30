@@ -19,7 +19,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         isSidebarOpen={isSidebarOpen}
         toggleSidebar={toggleSidebar}
       />
-      <div className="flex">
+      <div className="flex h-[calc(100vh-4rem)]">
         <Sidebar
           isOpen={isSidebarOpen}
           onClose={toggleSidebar}
@@ -30,7 +30,11 @@ export function AppLayout({ children }: AppLayoutProps) {
           onClose={toggleMobileSidebar}
           isMobile={true}
         />
-        <main className="flex-1 p-4">{children}</main>
+        <main className="flex-1 p-6 overflow-auto bg-gray-50 dark:bg-gray-900">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );

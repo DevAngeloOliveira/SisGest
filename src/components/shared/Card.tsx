@@ -1,22 +1,43 @@
 import { ReactNode } from 'react';
+import { Box, Heading } from '@chakra-ui/react';
+import { useColorMode } from '@chakra-ui/color-mode';
+import { motion, type HTMLMotionProps } from 'framer-motion';
 
-export interface CardProps {
+interface CardProps {
   title?: string;
   children: ReactNode;
   className?: string;
 }
 
+const MotionBox = motion(Box as any);
+
 export function Card({ title, children, className = '' }: CardProps) {
+  const { colorMode } = useColorMode();
+  const bg = colorMode === 'light' ? 'white' : 'gray.800';
+  const borderColor = colorMode === 'light' ? 'gray.200' : 'gray.700';
+
   return (
-    <div className={`bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden ${className}`}>
+    <MotionBox
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.2 }}
+      bg={bg}
+      borderWidth="1px"
+      borderColor={borderColor}
+      borderRadius="xl"
+      shadow="sm"
+      _hover={{ shadow: 'md' }}
+      className={className}
+    >
       {title && (
-        <div className="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+        <Box borderBottomWidth="1px" borderColor={borderColor} px={6} py={4}>
+          <Heading size="md" fontWeight="semibold">
             {title}
-          </h3>
-        </div>
+          </Heading>
+        </Box>
       )}
-      <div className="px-4 py-5 sm:p-6">{children}</div>
-    </div>
+      <Box p={6}>{children}</Box>
+    </MotionBox>
   );
 } 

@@ -2,7 +2,8 @@ import { ElementType } from 'react';
 import { FiHome, FiFolder, FiCheckSquare, FiUsers, FiSettings, FiX } from 'react-icons/fi';
 import { NavLink } from 'react-router-dom';
 import { usePermissions } from '../hooks/usePermissions';
-import { Permission } from '../types/common';
+import { Permission } from '../types';
+import { IconType } from 'react-icons';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -13,7 +14,7 @@ interface SidebarProps {
 interface NavItem {
   label: string;
   path: string;
-  icon: ElementType;
+  icon: IconType;
   permissions: Permission[];
 }
 
@@ -54,55 +55,42 @@ export function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
   const { hasAnyPermission } = usePermissions();
 
   const sidebarClasses = `
-    fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg transform
+    fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700
     ${isOpen ? 'translate-x-0' : '-translate-x-full'}
     ${isMobile ? 'lg:hidden' : 'hidden lg:block lg:translate-x-0'}
-    transition-transform duration-300 ease-in-out
+    transition-transform duration-300 ease-in-out pt-16
   `;
 
   return (
     <aside className={sidebarClasses}>
-      <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
-        <span className="text-xl font-bold text-gray-900 dark:text-white">
-          SisGest
-        </span>
-        {isMobile && (
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-500 rounded-lg hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <FiX className="w-6 h-6" />
-          </button>
-        )}
+      <div className="h-full px-3 py-4 overflow-y-auto">
+        <nav className="space-y-1">
+          {navItems.map(item => {
+            if (item.permissions.length > 0 && !hasAnyPermission(item.permissions)) {
+              return null;
+            }
+
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) => `
+                  flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors
+                  ${
+                    isActive
+                      ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/50 dark:text-primary-400'
+                      : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700/50'
+                  }
+                `}
+              >
+                <Icon className="w-5 h-5 mr-3" />
+                {item.label}
+              </NavLink>
+            );
+          })}
+        </nav>
       </div>
-
-      <nav className="px-2 mt-4 space-y-1">
-        {navItems.map(item => {
-          if (item.permissions.length > 0 && !hasAnyPermission(item.permissions)) {
-            return null;
-          }
-
-          const Icon = item.icon;
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) => `
-                flex items-center px-4 py-2 text-sm font-medium rounded-lg
-                ${
-                  isActive
-                    ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/50 dark:text-primary-100'
-                    : 'text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700/50'
-                }
-              `}
-            >
-              {/* @ts-ignore */}
-              <Icon className="w-5 h-5 mr-3" />
-              {item.label}
-            </NavLink>
-          );
-        })}
-      </nav>
     </aside>
   );
 } 

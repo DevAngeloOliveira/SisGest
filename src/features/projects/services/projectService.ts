@@ -1,84 +1,91 @@
-import { Project, ID } from '@/types';
+import { Project } from '../types/project.types';
+import { api } from '@/services/api';
+import { cacheService } from '@/services/cacheService';
+
+const CACHE_KEY = 'projects';
+const CACHE_DURATION = 1000 * 60 * 5; // 5 minutos
 
 class ProjectService {
-  private storageKey = '@sisgest:projects';
-
-  async getAll(): Promise<Project[]> {
-    return this.getProjects();
-  }
-
   async getProjects(): Promise<Project[]> {
-    const data = localStorage.getItem(this.storageKey);
-    return data ? JSON.parse(data) : [];
-  }
-
-  async getProjectById(id: ID): Promise<Project | null> {
-    const projects = await this.getProjects();
-    return projects.find(p => p.id === id) || null;
-  }
-
-  async createProject(data: Partial<Project>, userId: ID): Promise<Project> {
-    const projects = await this.getProjects();
-
-    const newProject: Project = {
-      ...data,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      createdBy: userId,
-      updatedBy: userId,
-      progress: 0,
-      tasks: [],
-      team: [],
-      timeline: {
-        phases: [],
-        start: new Date(),
-        end: new Date(),
-        milestones: []
-      },
-      objectives: [],
-      deliverables: [],
-      risks: [],
-      budget: {
-        estimated: 0,
-        actual: 0,
-        variance: 0
+    try {
+      // Tenta obter do cache primeiro
+      const cachedProjects = await cacheService.get<Project[]>(CACHE_KEY);
+      if (cachedProjects) {
+        return cachedProjects;
       }
-    } as Project;
 
-    projects.push(newProject);
-    localStorage.setItem(this.storageKey, JSON.stringify(projects));
+      // Se não estiver em cache, busca da API
+      const response = await api.get<Project[]>('/projects');
+      const projects = response.data;
+
+      // Salva no cache
+      await cacheService.set(CACHE_KEY, projects, CACHE_DURATION);
+      await cacheService.setProjects(projects); // Salva também no store específico
+
+      return projects;
+    } catch (error) {
+      // Em caso de erro de rede, tenta buscar do store específico
+      const offlineProjects = await cacheService.getProjects();
+      if (offlineProjects && offlineProjects.length > 0) {
+        return offlineProjects;
+      }
+      throw error;
+    }
+  }
+
+  async getProject(id: string): Promise<Project> {
+    try {
+      // Tenta obter do cache específico primeiro
+      const cachedProject = await cacheService.getProject(id);
+      if (cachedProject) {
+        return cachedProject;
+      }
+
+      const response = await api.get<Project>(`/projects/${id}`);
+      const project = response.data;
+
+      // Salva no cache específico
+      await cacheService.setProjects([project]);
+
+      return project;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async createProject(project: Omit<Project, 'id'>): Promise<Project> {
+    const response = await api.post<Project>('/projects', project);
+    const newProject = response.data;
+
+    // Atualiza os caches
+    const projects = await cacheService.get<Project[]>(CACHE_KEY) || [];
+    await cacheService.set(CACHE_KEY, [...projects, newProject], CACHE_DURATION);
+    await cacheService.setProjects([...projects, newProject]);
+
     return newProject;
   }
 
-  async updateProject(id: ID, data: Partial<Project>): Promise<Project> {
-    const projects = await this.getProjects();
-    const index = projects.findIndex(p => p.id === id);
+  async updateProject(id: string, project: Partial<Project>): Promise<Project> {
+    const response = await api.put<Project>(`/projects/${id}`, project);
+    const updatedProject = response.data;
 
-    if (index === -1) {
-      throw new Error('Project not found');
-    }
+    // Atualiza os caches
+    const projects = await cacheService.get<Project[]>(CACHE_KEY) || [];
+    const updatedProjects = projects.map(p => p.id === id ? updatedProject : p);
+    await cacheService.set(CACHE_KEY, updatedProjects, CACHE_DURATION);
+    await cacheService.setProjects(updatedProjects);
 
-    const updatedProject = {
-      ...projects[index],
-      ...data,
-      updatedAt: new Date().toISOString()
-    };
-
-    projects[index] = updatedProject;
-    localStorage.setItem(this.storageKey, JSON.stringify(projects));
     return updatedProject;
   }
 
-  async deleteProject(id: ID): Promise<void> {
-    const projects = await this.getProjects();
-    const filteredProjects = projects.filter(p => p.id !== id);
-    localStorage.setItem(this.storageKey, JSON.stringify(filteredProjects));
-  }
+  async deleteProject(id: string): Promise<void> {
+    await api.delete(`/projects/${id}`);
 
-  async syncProjects(): Promise<void> {
-    // Implementação futura para sincronização com backend
-    return Promise.resolve();
+    // Atualiza os caches
+    const projects = await cacheService.get<Project[]>(CACHE_KEY) || [];
+    const filteredProjects = projects.filter(p => p.id !== id);
+    await cacheService.set(CACHE_KEY, filteredProjects, CACHE_DURATION);
+    await cacheService.removeProject(id);
   }
 }
 

@@ -2,95 +2,30 @@
 export type ID = string;
 
 // User Types
-export type UserRole = 'ADMIN' | 'USER' | 'MANAGER' | 'COLLABORATOR';
-
-export type Permission =
-    | 'all'
-    | 'manage_projects'
-    | 'view_projects'
-    | 'manage_tasks'
-    | 'update_tasks'
-    | 'admin'
-    | 'edit'
-    | 'view'
-    | 'delete';
+export type UserRole = 'ADMIN' | 'MANAGER' | 'COLLABORATOR';
 
 export interface User {
-    id: ID;
+    id: string;
     name: string;
     email: string;
-    role: UserRole;
-    permissions: Permission[];
     avatar?: string;
-    createdAt: string;
-    updatedAt: string;
-    createdBy: string;
-    updatedBy: string;
+    role: UserRole;
 }
 
 // Project Types
-export type ProjectStatus =
-    | 'NOT_STARTED'
-    | 'PLANNING'
-    | 'IN_PROGRESS'
-    | 'ON_HOLD'
-    | 'COMPLETED'
-    | 'CANCELLED'
-    | 'ARCHIVED';
-
-export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'URGENT';
-
-export interface TeamMember {
-    id: ID;
-    name: string;
-    email: string;
-    role: string;
-    avatar?: string;
-    skills: string[];
-    availability: number;
-}
-
-export interface TimelinePhase {
-    id: ID;
-    name: string;
-    startDate: string;
-    endDate: string;
-    progress: number;
-}
-
-export interface Timeline {
-    phases: TimelinePhase[];
-    start: Date;
-    end: Date;
-    milestones: { date: Date; title: string; }[];
-}
+export type ProjectStatus = 'PLANNING' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED';
 
 export interface Project {
-    id: ID;
+    id: string;
     name: string;
     description: string;
     status: ProjectStatus;
-    priority: Priority;
-    startDate: string;
-    endDate: string;
     progress: number;
-    team: TeamMember[];
-    timeline: Timeline;
+    startDate: string;
+    endDate?: string;
+    manager: User;
+    team: User[];
     tasks: Task[];
-    manager: TeamMember;
-    objectives: string[];
-    deliverables: string[];
-    risks: { description: string; impact: string; mitigation: string; }[];
-    budget: {
-        estimated: number;
-        actual: number;
-        variance: number;
-    };
-    metrics?: {
-        costVariance: number;
-        scheduleVariance: number;
-        qualityScore: number;
-    };
     createdAt: string;
     updatedAt: string;
     createdBy: string;
@@ -98,27 +33,54 @@ export interface Project {
 }
 
 // Task Types
+export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'BLOCKED';
+export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+
 export interface Task {
-    id: ID;
+    id: string;
+    projectId: string;
     title: string;
     description: string;
-    status: ProjectStatus;
-    priority: Priority;
-    assignee: TeamMember;
-    startDate: string;
-    endDate: string;
-    dueDate: string;
-    projectId: ID;
-    progress: number;
-    estimatedHours: number;
-    actualHours: number;
-    dependencies: ID[];
-    attachments: { name: string; url: string; }[];
-    comments: { id: ID; text: string; author: string; createdAt: string; }[];
+    status: TaskStatus;
+    priority: TaskPriority;
+    assignedTo?: User;
+    dueDate?: string;
+    estimatedHours?: number;
+    completedAt?: string;
+    attachments: Attachment[];
+    comments: Comment[];
+    subtasks: Subtask[];
+    tags: string[];
     createdAt: string;
     updatedAt: string;
+}
+
+export interface Attachment {
+    id: string;
+    name: string;
+    url: string;
+    type: string;
+    size: number;
+    createdAt: string;
     createdBy: string;
-    updatedBy: string;
+}
+
+export interface Comment {
+    id: string;
+    content: string;
+    author: User;
+    createdAt: string;
+    updatedAt?: string;
+    attachments: Attachment[];
+}
+
+export interface Subtask {
+    id: string;
+    title: string;
+    completed: boolean;
+    assignedTo?: User;
+    dueDate?: string;
+    completedAt?: string;
 }
 
 // Status Colors
@@ -130,4 +92,12 @@ export const statusColors: Record<ProjectStatus, string> = {
     'COMPLETED': 'bg-green-100 text-green-800',
     'CANCELLED': 'bg-red-100 text-red-800',
     'ARCHIVED': 'bg-purple-100 text-purple-800'
-}; 
+};
+
+export type Permission =
+    | 'manage_projects'
+    | 'view_projects'
+    | 'manage_tasks'
+    | 'update_tasks'
+    | 'manage_users'
+    | 'all'; 

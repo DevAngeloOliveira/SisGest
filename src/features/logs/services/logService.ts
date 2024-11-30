@@ -1,5 +1,5 @@
-import { Log, LogAction } from '../types/log.types';
-import { cacheService } from '@/services/cacheService';
+import { Log, LogAction, LogEntity, LogFilter, LogStats } from '../types/log.types';
+import { cacheService } from '../../../services/cacheService';
 
 class LogService {
   private getLogs(): Log[] {

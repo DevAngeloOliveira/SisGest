@@ -1,72 +1,81 @@
 import { useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import { useNotification } from '@/hooks/useNotification';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../hooks/useAuth';
 import { LoginCredentials } from '../types/auth.types';
 
 export function LoginForm() {
+  const navigate = useNavigate();
   const { login } = useAuth();
-  const notification = useNotification();
-  const [credentials, setCredentials] = useState<LoginCredentials>({
-    email: '',
-    password: ''
-  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setCredentials(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    const credentials: LoginCredentials = {
+      email: formData.get('email') as string,
+      password: formData.get('password') as string,
+    };
+
     try {
-      await login(credentials.email, credentials.password);
-      notification.success('Login realizado com sucesso!');
-    } catch {
-      notification.error('Erro ao realizar login');
+      await login(credentials);
+      navigate('/');
+    } catch (error) {
+      setError('Email ou senha inválidos');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-          Email
-        </label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          value={credentials.email}
-          onChange={handleChange}
-          required
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-        />
+    <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+      <div className="rounded-md shadow-sm -space-y-px">
+        <div>
+          <label htmlFor="email" className="sr-only">
+            Email
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+            placeholder="Email"
+          />
+        </div>
+        <div>
+          <label htmlFor="password" className="sr-only">
+            Senha
+          </label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+            placeholder="Senha"
+          />
+        </div>
       </div>
 
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-          Senha
-        </label>
-        <input
-          type="password"
-          id="password"
-          name="password"
-          value={credentials.password}
-          onChange={handleChange}
-          required
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-        />
-      </div>
+      {error && (
+        <div className="text-red-500 text-sm text-center">{error}</div>
+      )}
 
-      <button
-        type="submit"
-        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-      >
-        Entrar
-      </button>
+      <div>
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+        >
+          {isLoading ? 'Entrando...' : 'Entrar'}
+        </button>
+      </div>
     </form>
   );
 } 

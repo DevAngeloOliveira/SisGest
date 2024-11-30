@@ -2,23 +2,15 @@ import { lazy } from 'react';
 import { RouteObject } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 
-const ProjectsPage = lazy(() => 
-  import('../pages/ProjectsPage').then(module => ({ default: module.ProjectsPage }))
-);
-
-const ProjectDetailsPage = lazy(() => 
-  import('../pages/ProjectDetailsPage').then(module => ({ default: module.ProjectDetailsPage }))
-);
-
-const ProjectFormPage = lazy(() => 
-  import('../pages/ProjectFormPage').then(module => ({ default: module.ProjectFormPage }))
-);
+const ProjectsPage = lazy(() => import('../pages/ProjectsPage').then(m => ({ default: m.ProjectsPage })));
+const ProjectFormPage = lazy(() => import('../pages/ProjectFormPage').then(m => ({ default: m.ProjectFormPage })));
+const ProjectDetailsPage = lazy(() => import('../pages/ProjectDetailsPage').then(m => ({ default: m.ProjectDetailsPage })));
 
 export const projectRoutes: RouteObject[] = [
   {
     path: '/projects',
     element: (
-      <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'COLLABORATOR']}>
+      <ProtectedRoute permissions={['manage_projects', 'view_projects']}>
         <ProjectsPage />
       </ProtectedRoute>
     )
@@ -26,7 +18,7 @@ export const projectRoutes: RouteObject[] = [
   {
     path: '/projects/new',
     element: (
-      <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
+      <ProtectedRoute permissions={['manage_projects']}>
         <ProjectFormPage />
       </ProtectedRoute>
     )
@@ -34,7 +26,7 @@ export const projectRoutes: RouteObject[] = [
   {
     path: '/projects/:id',
     element: (
-      <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER', 'COLLABORATOR']}>
+      <ProtectedRoute permissions={['manage_projects', 'view_projects']}>
         <ProjectDetailsPage />
       </ProtectedRoute>
     )
@@ -42,7 +34,7 @@ export const projectRoutes: RouteObject[] = [
   {
     path: '/projects/:id/edit',
     element: (
-      <ProtectedRoute allowedRoles={['ADMIN', 'MANAGER']}>
+      <ProtectedRoute permissions={['manage_projects']}>
         <ProjectFormPage />
       </ProtectedRoute>
     )

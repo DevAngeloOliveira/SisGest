@@ -1,111 +1,83 @@
-import { Project, ProjectFormData } from '@/types/project.types';
-import { cacheService } from '@/services/cacheService';
-import { logService } from '@/features/logs/services/logService';
+import { Project, ID } from '@/types';
 
 class ProjectService {
-  async getProjects(): Promise<Project[]> {
-    const projects = cacheService.getProjects();
-    return projects.map(project => ({
-      ...project,
-      timeline: {
-        ...project.timeline,
-        phases: [],
-        milestones: project.timeline?.milestones || []
-      },
-      tasks: []
-    }));
+  private storageKey = '@sisgest:projects';
+
+  async getAll(): Promise<Project[]> {
+    return this.getProjects();
   }
 
-  async getProjectById(id: string): Promise<Project | null> {
+  async getProjects(): Promise<Project[]> {
+    const data = localStorage.getItem(this.storageKey);
+    return data ? JSON.parse(data) : [];
+  }
+
+  async getProjectById(id: ID): Promise<Project | null> {
     const projects = await this.getProjects();
     return projects.find(p => p.id === id) || null;
   }
 
-  async createProject(
-    data: ProjectFormData,
-    userId: string,
-    userName: string,
-    userRole: string
-  ): Promise<Project> {
+  async createProject(data: Partial<Project>, userId: ID): Promise<Project> {
     const projects = await this.getProjects();
-    
+
     const newProject: Project = {
-      id: crypto.randomUUID(),
       ...data,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: userId,
+      updatedBy: userId,
       progress: 0,
       tasks: [],
+      team: [],
       timeline: {
         phases: [],
-        start: new Date(data.startDate),
-        end: new Date(data.endDate),
+        start: new Date(),
+        end: new Date(),
         milestones: []
       },
-      metrics: {
-        plannedProgress: 0,
-        actualProgress: 0,
-        costVariance: 0,
-        scheduleVariance: 0,
-        taskCompletionRate: 0,
-        teamUtilization: 0,
-        riskCount: { high: 0, medium: 0, low: 0 }
-      },
+      objectives: [],
+      deliverables: [],
+      risks: [],
       budget: {
         estimated: 0,
-        spent: 0,
-        currency: 'BRL',
-        categories: {},
-        expenses: []
-      },
-      qualityMetrics: []
-    };
+        actual: 0,
+        variance: 0
+      }
+    } as Project;
 
     projects.push(newProject);
-    await cacheService.setProjects(projects);
-
-    await logService.logUserAction(
-      'PROJECT_CREATE',
-      userId,
-      userName,
-      userRole,
-      { id: newProject.id, name: newProject.name }
-    );
-
+    localStorage.setItem(this.storageKey, JSON.stringify(projects));
     return newProject;
   }
 
-  async updateProject(
-    id: string,
-    data: Partial<Project>
-  ): Promise<Project> {
+  async updateProject(id: ID, data: Partial<Project>): Promise<Project> {
     const projects = await this.getProjects();
     const index = projects.findIndex(p => p.id === id);
-    
+
     if (index === -1) {
-      throw new Error('Projeto não encontrado');
+      throw new Error('Project not found');
     }
 
     const updatedProject = {
       ...projects[index],
       ...data,
-      updatedAt: new Date()
+      updatedAt: new Date().toISOString()
     };
 
     projects[index] = updatedProject;
-    await cacheService.setProjects(projects);
-
+    localStorage.setItem(this.storageKey, JSON.stringify(projects));
     return updatedProject;
   }
 
-  async deleteProject(id: string): Promise<void> {
+  async deleteProject(id: ID): Promise<void> {
     const projects = await this.getProjects();
     const filteredProjects = projects.filter(p => p.id !== id);
-    await cacheService.setProjects(filteredProjects);
+    localStorage.setItem(this.storageKey, JSON.stringify(filteredProjects));
   }
 
   async syncProjects(): Promise<void> {
-    // Implementação futura
+    // Implementação futura para sincronização com backend
     return Promise.resolve();
   }
 }

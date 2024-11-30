@@ -1,30 +1,25 @@
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '../features/auth/hooks/useAuth';
-import { UserRole } from '../features/auth/types/auth.types';
+import { ReactNode } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import { usePermissions } from '../hooks/usePermissions';
+import { Permission } from '../types/common';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
-  allowedRoles?: UserRole[];
-  requiredPermission?: string;
+  children: ReactNode;
+  permissions?: Permission[];
 }
 
-export function ProtectedRoute({ 
-  children, 
-  allowedRoles = [], 
-  requiredPermission 
-}: ProtectedRouteProps) {
-  const { isAuthenticated, user } = useAuth();
+export function ProtectedRoute({ children, permissions = [] }: ProtectedRouteProps) {
+  const { isAuthenticated } = useAuth();
+  const { hasAnyPermission } = usePermissions();
+  const location = useLocation();
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
-  if (allowedRoles.length > 0 && user && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/unauthorized" />;
-  }
-
-  if (requiredPermission && user?.permissions && !user.permissions.includes(requiredPermission)) {
-    return <Navigate to="/unauthorized" />;
+  if (permissions.length > 0 && !hasAnyPermission(permissions)) {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

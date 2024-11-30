@@ -1,58 +1,154 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Project } from '@/types/project.types';
-import { projectService } from '@/features/projects/services/projectService';
-import { useNotification } from '@/hooks/useNotification';
-import { ProjectTeam } from '@/features/projects/components/ProjectTeam';
-import { ProjectTimeline } from '@/features/projects/components/ProjectTimeline';
-import { TaskList } from '@/features/tasks/components/TaskList';
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { Project } from '../types';
+import { projectService } from '../features/projects/services/projectService';
+import { Card } from '../components/shared/Card';
 
 export function ProjectDetailsPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const notification = useNotification();
   const [project, setProject] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (id) {
-      loadProject();
-    }
+    const loadProject = async () => {
+      try {
+        if (id) {
+          const data = await projectService.getProjectById(id);
+          setProject(data);
+        }
+      } catch (error) {
+        console.error('Error loading project:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProject();
   }, [id]);
 
-  const loadProject = async () => {
-    try {
-      if (!id) return;
-      const data = await projectService.getProjectById(id);
-      if (!data) {
-        notification.error('Projeto não encontrado');
-        navigate('/projects');
-        return;
-      }
-      setProject({
-        ...data,
-        tasks: [],
-        timeline: {
-          ...data.timeline,
-          phases: []
-        }
-      });
-    } catch {
-      notification.error('Erro ao carregar projeto');
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+      </div>
+    );
+  }
 
-  if (loading || !project) {
-    return <div>Carregando...</div>;
+  if (!project) {
+    return (
+      <div className="text-center py-12">
+        <h2 className="text-2xl font-bold text-gray-900">Projeto não encontrado</h2>
+        <p className="mt-2 text-gray-600">O projeto que você está procurando não existe.</p>
+      </div>
+    );
   }
 
   return (
-    <div>
-      <ProjectTeam team={project.team} />
-      <ProjectTimeline phases={project.timeline.phases || []} />
-      <TaskList tasks={project.tasks || []} onEdit={() => {}} onDelete={() => {}} />
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
+        <p className="mt-2 text-gray-600">{project.description}</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card title="Informações Gerais">
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Status</h3>
+              <p className="mt-1">{project.status}</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Prioridade</h3>
+              <p className="mt-1">{project.priority}</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Progresso</h3>
+              <div className="mt-1 relative pt-1">
+                <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200">
+                  <div
+                    style={{ width: `${project.progress}%` }}
+                    className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary-500"
+                  ></div>
+                </div>
+                <span className="text-xs text-gray-600 mt-1">{project.progress}%</span>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card title="Datas">
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Data de Início</h3>
+              <p className="mt-1">{new Date(project.startDate).toLocaleDateString()}</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Data de Término</h3>
+              <p className="mt-1">{new Date(project.endDate).toLocaleDateString()}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card title="Equipe">
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Gerente</h3>
+              <div className="mt-1 flex items-center space-x-2">
+                {project.manager.avatar ? (
+                  <img
+                    src={project.manager.avatar}
+                    alt={project.manager.name}
+                    className="h-8 w-8 rounded-full"
+                  />
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-primary-500 flex items-center justify-center">
+                    <span className="text-sm font-medium text-white">
+                      {project.manager.name.charAt(0)}
+                    </span>
+                  </div>
+                )}
+                <span>{project.manager.name}</span>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-500">Membros</h3>
+              <div className="mt-1 flex flex-wrap gap-2">
+                {project.team.map(member => (
+                  <div
+                    key={member.id}
+                    className="flex items-center space-x-2 bg-gray-100 rounded-full px-3 py-1"
+                  >
+                    {member.avatar ? (
+                      <img
+                        src={member.avatar}
+                        alt={member.name}
+                        className="h-6 w-6 rounded-full"
+                      />
+                    ) : (
+                      <div className="h-6 w-6 rounded-full bg-primary-500 flex items-center justify-center">
+                        <span className="text-xs font-medium text-white">
+                          {member.name.charAt(0)}
+                        </span>
+                      </div>
+                    )}
+                    <span className="text-sm">{member.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card title="Objetivos">
+          <div className="space-y-2">
+            {project.objectives.map((objective, index) => (
+              <p key={index} className="text-gray-600">
+                • {objective}
+              </p>
+            ))}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 } 

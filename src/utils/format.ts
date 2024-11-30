@@ -1,18 +1,10 @@
-export const formatCurrency = (value: number, currency = 'BRL'): string => {
+export const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
-    currency
+    currency: 'BRL'
   }).format(value);
 };
 
-export const formatNumber = (value: number): string => {
-  return new Intl.NumberFormat('pt-BR').format(value);
-};
-
-export const formatPercentage = (value: number): string => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'percent',
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1
-  }).format(value / 100);
+export const formatDate = (date: Date | string): string => {
+  return new Intl.DateTimeFormat('pt-BR').format(new Date(date));
 }; 

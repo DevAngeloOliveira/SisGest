@@ -1,16 +1,15 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '@/features/auth/hooks/useAuth';
+import { FiMenu, FiMoon, FiSun, FiUser } from 'react-icons/fi';
+import { useTheme } from '../hooks/useTheme';
+import { useAuth } from '../hooks/useAuth';
 
 interface HeaderProps {
-  toggleSidebar: () => void;
   isSidebarOpen: boolean;
+  toggleSidebar: () => void;
 }
 
-export function Header({ toggleSidebar, isSidebarOpen }: HeaderProps) {
-  const { user, logout } = useAuth();
-  const [showUserMenu, setShowUserMenu] = useState(false);
+export function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
+  const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
 
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm">
@@ -18,80 +17,54 @@ export function Header({ toggleSidebar, isSidebarOpen }: HeaderProps) {
         <div className="flex justify-between h-16">
           <div className="flex">
             <button
+              type="button"
+              className={`px-4 border-r border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 lg:hidden ${
+                isSidebarOpen ? 'bg-gray-100 dark:bg-gray-700' : ''
+              }`}
               onClick={toggleSidebar}
-              className="px-4 text-gray-500 dark:text-gray-400 focus:outline-none"
             >
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                {isSidebarOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                )}
-              </svg>
+              <span className="sr-only">Abrir menu</span>
+              <FiMenu className="h-6 w-6" />
             </button>
+            <div className="flex-shrink-0 flex items-center">
+              <span className="text-xl font-bold text-gray-900 dark:text-white">
+                SisGest
+              </span>
+            </div>
           </div>
-
           <div className="flex items-center">
-            <div className="ml-3 relative">
-              <div>
+            <button
+              type="button"
+              className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              onClick={toggleTheme}
+            >
+              <span className="sr-only">Alternar tema</span>
+              {theme === 'dark' ? (
+                <FiSun className="h-5 w-5" />
+              ) : (
+                <FiMoon className="h-5 w-5" />
+              )}
+            </button>
+            <div className="ml-4 flex items-center">
+              <div className="relative">
                 <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  type="button"
+                  className="flex items-center max-w-xs rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   <span className="sr-only">Abrir menu do usuário</span>
-                  <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                      {user?.name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
+                  {user?.avatar ? (
+                    <img
+                      className="h-8 w-8 rounded-full"
+                      src={user.avatar}
+                      alt={user.name}
+                    />
+                  ) : (
+                    <div className="h-8 w-8 rounded-full bg-primary-500 flex items-center justify-center">
+                      <FiUser className="h-5 w-5 text-white" />
+                    </div>
+                  )}
                 </button>
               </div>
-
-              <AnimatePresence>
-                {showUserMenu && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1"
-                  >
-                    <Link
-                      to="/profile"
-                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
-                    >
-                      Perfil
-                    </Link>
-                    <Link
-                      to="/settings"
-                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
-                    >
-                      Configurações
-                    </Link>
-                    <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                    <button
-                      onClick={logout}
-                      className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
-                    >
-                      Sair
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
           </div>
         </div>

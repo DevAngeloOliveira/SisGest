@@ -1,22 +1,23 @@
+import { Suspense } from 'react'
 import { RouterProvider } from 'react-router-dom'
+import { ErrorBoundary } from './components/ErrorBoundary'
+import { LoadingSpinner } from './components/LoadingSpinner'
+import { AppProvider } from './providers/AppProvider'
+import { InitializationWrapper } from './components/InitializationWrapper'
 import { router } from './routes'
-import { NotificationProvider } from './providers/NotificationProvider'
-import { ThemeProvider } from './contexts/ThemeContext'
-import { AuthProvider } from './features/auth/contexts/AuthContext'
 import { ToastContainer } from 'react-toastify'
-import 'react-toastify/dist/ReactToastify.css'
 
-function App() {
+export function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <NotificationProvider>
-          <RouterProvider router={router} />
-          <ToastContainer />
-        </NotificationProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingSpinner />}>
+        <InitializationWrapper>
+          <AppProvider>
+            <RouterProvider router={router} />
+            <ToastContainer />
+          </AppProvider>
+        </InitializationWrapper>
+      </Suspense>
+    </ErrorBoundary>
   )
 }
-
-export default App

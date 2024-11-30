@@ -1,61 +1,64 @@
-import { Project } from '@/types/project.types';
-import { Task } from '@/types/task.types';
-import { User } from '@/features/auth/types/auth.types';
+import { CACHE_KEYS } from '../constants/cache';
+export { CACHE_KEYS };
 
-export const CACHE_KEYS = {
-  tasks: 'tasks',
-  projects: 'projects',
-  users: 'users',
-  logs: 'logs',
-  dashboardStats: 'dashboardStats'
-} as const;
+export class CacheService {
+  private static instance: CacheService;
+  private cache: Map<string, any>;
 
-export type CacheKeys = typeof CACHE_KEYS[keyof typeof CACHE_KEYS];
-
-class CacheService {
-  private storage: Storage = localStorage;
-
-  set<T>(key: CacheKeys, data: T): void {
-    this.storage.setItem(key, JSON.stringify(data));
+  private constructor() {
+    this.cache = new Map();
+    this.loadFromLocalStorage();
   }
 
-  get<T>(key: CacheKeys): T | null {
-    const data = this.storage.getItem(key);
-    return data ? JSON.parse(data) : null;
+  static getInstance(): CacheService {
+    if (!CacheService.instance) {
+      CacheService.instance = new CacheService();
+    }
+    return CacheService.instance;
   }
 
-  remove(key: CacheKeys): void {
-    this.storage.removeItem(key);
+  private loadFromLocalStorage() {
+    Object.values(CACHE_KEYS).forEach(key => {
+      const value = localStorage.getItem(key);
+      if (value) {
+        try {
+          this.cache.set(key, JSON.parse(value));
+        } catch (error) {
+          console.error(`Error loading cache for key ${key}:`, error);
+        }
+      }
+    });
+  }
+
+  set(key: string, value: any, persist: boolean = true): void {
+    this.cache.set(key, value);
+    if (persist) {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+  }
+
+  get<T>(key: string): T | null {
+    return this.cache.get(key) || null;
+  }
+
+  remove(key: string): void {
+    this.cache.delete(key);
+    localStorage.removeItem(key);
   }
 
   clear(): void {
-    this.storage.clear();
+    this.cache.clear();
+    localStorage.clear();
   }
 
-  // Métodos específicos
-  getProjects(): Project[] {
-    return this.get<Project[]>(CACHE_KEYS.projects) || [];
+  has(key: string): boolean {
+    return this.cache.has(key);
   }
 
-  setProjects(projects: Project[]): void {
-    this.set(CACHE_KEYS.projects, projects);
-  }
-
-  getTasks(): Task[] {
-    return this.get<Task[]>(CACHE_KEYS.tasks) || [];
-  }
-
-  setTasks(tasks: Task[]): void {
-    this.set(CACHE_KEYS.tasks, tasks);
-  }
-
-  getUsers(): User[] {
-    return this.get<User[]>(CACHE_KEYS.users) || [];
-  }
-
-  setUsers(users: User[]): void {
-    this.set(CACHE_KEYS.users, users);
+  sync(): Promise<void> {
+    // Implementar sincronização com o backend
+    return Promise.resolve();
   }
 }
 
-export const cacheService = new CacheService(); 
+export const cacheService = CacheService.getInstance(); 
